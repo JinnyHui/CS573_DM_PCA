@@ -54,8 +54,23 @@ eigenvalue = max_x/max_pre  # calculate the max eigenvalue
 print('\n3. The maximum eigenvalue is:', str(eigenvalue))
 # print(np.linalg.eig(cov_matrix))
 
-# 4th step: Projection of the first two eigen vectors
-eigen_vec_1, eigen_vec_2 = np.linalg.eig(cov_matrix)[1][0:2]
+# 4th step: Projection on the first two eigen vectors
+eigen_vec = np.linalg.eig(cov_matrix)[1]
+eigen_vec_1 = eigen_vec[:, 0]
+eigen_vec_2 = eigen_vec[:, 1]
+projection = np.zeros((row, column))
+for i in range(row):  # compute the projected points
+    projection_1 = (np.dot(eigen_vec_1.T, norm_data[i]))*eigen_vec_1
+    projection_2 = (np.dot(eigen_vec_2.T, norm_data[i]))*eigen_vec_2
+    projection[i] = projection_1 + projection_2
+variance = np.var(projection)
+print('\n4. The variance is:', str(variance))
 
-print(eigen_vec_1, eigen_vec_2)
+# 5th step: Covariance matrix in eigen-decomposition form
+eigen_val = np.linalg.eig(cov_matrix)[0]
+similar_matrix = np.diag(eigen_val)
+cov_matrix_dec = np.dot(np.dot(eigen_vec, similar_matrix), eigen_vec.T)
+print('\n5. The Eigen-decomposition form of covariance matrix:')
+print(cov_matrix_dec)
 
+# 6th step:
