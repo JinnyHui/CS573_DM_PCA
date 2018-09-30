@@ -62,7 +62,7 @@ def eigen(dataset, e):
     vector_x = np.random.rand(column)  # initialize a random vector
     while change >= e:  # keep calculating the new vector until the change < threshold
         vector_pre = vector_x
-        vector_unscaled_x = np.dot(cov_matrix, vector_x)
+        vector_unscaled_x = np.dot(covariance_matrix, vector_x)
         max_val = np.amax(np.absolute(vector_unscaled_x))  # get the max abs value
         vector_x = vector_unscaled_x / max_val
         change = np.linalg.norm(vector_x - vector_pre)
@@ -79,17 +79,17 @@ def eigen(dataset, e):
 
 
 # file_name = raw_input('Please input the name of data file:')
-data = file_reader('iris.txt')
+data = file_reader('magic04.data')
 
 # step a: Z-Normalization
 norm_data = z_norm(data)
 
 # step b: Covariance Matrix
-cov_matrix = cov_matrix(norm_data)
+covariance_matrix = cov_matrix(norm_data)
 npSigma = np.cov(norm_data,  bias=True, rowvar=False)
 
 print('\nb. The covariance matrix is:')
-print(cov_matrix)
+print(covariance_matrix)
 print('\n   comparison with np.cov:')
 print(npSigma)
 
@@ -101,11 +101,15 @@ print('\nc. My maximum eigenvalue is:', str(dominant_value))
 print('   My dominant eigenvector is:')
 print(dominant_vector)
 print('\nCompare with np linalg.eig method:')
-print(np.linalg.eig(cov_matrix))
+print(np.linalg.eig(covariance_matrix))
 
 
 # step d: Projection on the first two eigen vectors
-eigen_vec = np.linalg.eig(cov_matrix)[1][:, 0:2]
+eigen_value_unsorted, eigen_vector_unsorted = np.linalg.eig(covariance_matrix)
+idx = eigen_value_unsorted.argsort()[::-1]
+eigen_value_sorted = eigen_value_unsorted[idx]
+eigen_vector_sorted = eigen_vector_unsorted[:, idx]
+eigen_vec = eigen_vector_sorted[:, 0:2]
 row_data, column_data = norm_data.shape
 projection = np.zeros((row_data, column_data))
 matrix_a = np.zeros((row_data, 2))
@@ -114,16 +118,65 @@ for i in range(row_data):  # compute the projected points
 for i in range(row_data):
     projection[i] = np.dot(eigen_vec, matrix_a[i].T)
 variance = np.var(projection)
-print('\n4. The variance is:', str(variance))
+print('\nd. The variance is:', str(variance))
 
 # step e: Covariance matrix in eigen-decomposition form
-eigen_val = np.linalg.eig(cov_matrix)[0]
+eigen_val = np.linalg.eig(covariance_matrix)[0]
 similar_matrix = np.diag(eigen_val)
-eigen_matrix = eigen_vec = np.linalg.eig(cov_matrix)[1]
+eigen_matrix = eigen_vec = np.linalg.eig(covariance_matrix)[1]
 cov_matrix_dec = np.dot(np.dot(eigen_vec, similar_matrix), eigen_vec.T)
-print('\n5. The Eigen-decomposition form of covariance matrix:')
-# print(cov_matrix_dec)
+print('\ne. The Eigen-decomposition form of covariance matrix:')
+print('  U:')
+print(eigen_matrix)
+print('similar matrix:')
+print(similar_matrix)
+print('  UT:')
+print(eigen_matrix.T)
+print('  U LAMBDA UT:')
+print(cov_matrix_dec)
 
 # step f: PCA sub-routine
 def PCA(D, alpha):
-    return 
+    """
+    PCA algorithm sub-routine, page 198
+    :param D: the input dataset
+    :param alpha: how much variance we want to preserve
+    :return: an array of principal vectors
+    """
+    norm_D = z_norm(D)  # step 1,2
+    cov_D = cov_matrix(norm_D)  # step 3
+    val_D_unsorted, vector_D_unsorted = np.linalg.eig(cov_D)
+    index = val_D_unsorted.argsort()[::-1]
+    eigen_val_D = val_D_unsorted[index]  # step 4
+    U = vector_D_unsorted[index]  # step 5
+    row, column = D.shape
+    variance_fraction = 0
+    vector_index = -1
+    total_eigen_value = np.sum(eigen_val_D)
+    sum_eigen_value = 0
+    while variance_fraction < alpha:
+        vector_index += 1
+        sum_eigen_value += eigen_val_D[vector_index]
+        variance_fraction = sum_eigen_value/total_eigen_value
+    Ur = U[:vector_index+1]
+    Ar = np.zeros((row, vector_index+1))
+    for i in range(row):
+        Ar[i] = np.dot(Ur, norm_D[i].T)
+    return Ur, Ar
+
+
+# use PCA sub-routine to get
+principal_vectors, reduced_dime_data = PCA(data, 0.95)
+first_10 = reduced_dime_data[:10]
+print('\nf. The principal vectors we need are:')
+print(principal_vectors)
+print('\n   The first 10 reduced dimensionality data co-ordinates:')
+print(first_10)
+
+
+# step g: compute the co-variance of projected data
+cov = np.cov(reduced_dime_data,  bias=True, rowvar=False)
+projected_points = np.zeros((row_data, column_data))
+for i in range(row_data):
+    projected_points[i] = np.dot(principal_vectors.T, reduced_dime_data[i].T)
+sum_eigen_val = np.sum(eigen_val[:len(principal_vectors)])
