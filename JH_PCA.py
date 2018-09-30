@@ -5,6 +5,7 @@
 
 import pandas as pd
 import numpy as np
+import sys
 
 
 def file_reader(name):
@@ -78,8 +79,8 @@ def eigen(dataset, e):
 ###############################################################################################
 
 
-# file_name = raw_input('Please input the name of data file:')
-data = file_reader('magic04.data')
+file_name = input('Please input the name of data file:')
+data = file_reader(file_name)
 
 # step a: Z-Normalization
 norm_data = z_norm(data)
@@ -148,7 +149,7 @@ def PCA(D, alpha):
     val_D_unsorted, vector_D_unsorted = np.linalg.eig(cov_D)
     index = val_D_unsorted.argsort()[::-1]
     eigen_val_D = val_D_unsorted[index]  # step 4
-    U = vector_D_unsorted[index]  # step 5
+    U = vector_D_unsorted[:, index]  # step 5
     row, column = D.shape
     variance_fraction = 0
     vector_index = -1
@@ -158,10 +159,10 @@ def PCA(D, alpha):
         vector_index += 1
         sum_eigen_value += eigen_val_D[vector_index]
         variance_fraction = sum_eigen_value/total_eigen_value
-    Ur = U[:vector_index+1]
+    Ur = U[:, :vector_index+1]
     Ar = np.zeros((row, vector_index+1))
     for i in range(row):
-        Ar[i] = np.dot(Ur, norm_D[i].T)
+        Ar[i] = np.dot(Ur.T, norm_D[i].T)
     return Ur, Ar
 
 
@@ -175,8 +176,11 @@ print(first_10)
 
 
 # step g: compute the co-variance of projected data
-cov = np.cov(reduced_dime_data,  bias=True, rowvar=False)
 projected_points = np.zeros((row_data, column_data))
 for i in range(row_data):
-    projected_points[i] = np.dot(principal_vectors.T, reduced_dime_data[i].T)
-sum_eigen_val = np.sum(eigen_val[:len(principal_vectors)])
+    projected_points[i] = np.dot(principal_vectors, reduced_dime_data[i].T)
+cov = np.cov(projected_points,  bias=True, rowvar=False)
+trace = np.trace(cov)
+sum_eigen_val = np.sum(eigen_value_sorted[:len(principal_vectors)])
+print('The covariance of the projected data points is:', str(trace))
+print('The sum of eigen values is:', str(sum_eigen_val))
