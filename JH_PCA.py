@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Jingyi hui 09/22/2018
 # CSCI573 DATAMINING
 # HOMEWORK 2 PCA
@@ -79,7 +79,8 @@ def eigen(dataset, e):
 ###############################################################################################
 
 
-file_name = input('Please input the name of data file:')
+#file_name = input('Please input the name of data file:')
+file_name = sys.argv[1]
 data = file_reader(file_name)
 
 # step a: Z-Normalization
@@ -181,6 +182,6 @@ for i in range(row_data):
     projected_points[i] = np.dot(principal_vectors, reduced_dime_data[i].T)
 cov = np.cov(projected_points,  bias=True, rowvar=False)
 trace = np.trace(cov)
-sum_eigen_val = np.sum(eigen_value_sorted[:len(principal_vectors)])
+sum_eigen_val = np.sum(eigen_value_sorted[:len(principal_vectors[0])])
 print('The covariance of the projected data points is:', str(trace))
 print('The sum of eigen values is:', str(sum_eigen_val))
